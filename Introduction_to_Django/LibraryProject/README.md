@@ -24,3 +24,10 @@ python manage.py runserver
 python manage.py makemigrations
 python manage.py migrate
 ```
+
+## Django Admin Integration
+
+- Registered the `Book` model with the admin interface.
+- Customized list display to show `title`, `author`, and `publication_year`.
+- Enabled filtering by publication year.
+- Added search capability for `title` and `author`.
