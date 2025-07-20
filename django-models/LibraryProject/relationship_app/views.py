@@ -1,7 +1,6 @@
 from django.shortcuts import render, redirect
 from .models import Book
 from .models import Library
-from .models import UserProfile
 from django.views.generic.detail import DetailView
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.forms import UserCreationForm
@@ -13,62 +12,26 @@ from django.contrib.auth.decorators import  user_passes_test
 
 # ROLES
 
-def check_role(user, allowed_roles):
-    """Helper function to check user role"""
-    if not user.is_authenticated:
-        return False
-    try:
-        return user.userprofile.role in allowed_roles
-    except UserProfile.DoesNotExist:
-        return False
+def check_admin(user):
+    return user.is_authenticated and hasattr(user, 'userprofile') and user.userprofile.role == 'Admin'
 
-def admin_check(user):
-    return check_role(user, ['Admin'])
+def check_librarian(user):
+    return user.is_authenticated and hasattr(user, 'userprofile') and user.userprofile.role == 'Librarian'
 
-def librarian_check(user):
-    return check_role(user, ['Librarian'])
+def check_member(user):
+    return user.is_authenticated and hasattr(user, 'userprofile') and user.userprofile.role == 'Member'
 
-def member_check(user):
-    return check_role(user, ['Member'])
-
-@login_required
-@user_passes_test(admin_check, login_url='/accounts/login/')
+@user_passes_test(check_admin)
 def admin_view(request):
     return render(request, 'admin_view.html')
 
-@login_required
-@user_passes_test(librarian_check, login_url='/accounts/login/')
+@user_passes_test(check_librarian)
 def librarian_view(request):
     return render(request, 'librarian_view.html')
 
-@login_required
-@user_passes_test(member_check, login_url='/accounts/login/')
+@user_passes_test(check_member)
 def member_view(request):
     return render(request, 'member_view.html')
-
-
-
-
-# def check_admin(user):
-#     return user.is_authenticated and hasattr(user, 'userprofile') and user.userprofile.role == 'Admin'
-
-# def check_librarian(user):
-#     return user.is_authenticated and hasattr(user, 'userprofile') and user.userprofile.role == 'Librarian'
-
-# def check_member(user):
-#     return user.is_authenticated and hasattr(user, 'userprofile') and user.userprofile.role == 'Member'
-
-# @user_passes_test(check_admin)
-# def admin_view(request):
-#     return render(request, 'admin_view.html')
-
-# @user_passes_test(check_librarian)
-# def librarian_view(request):
-#     return render(request, 'librarian_view.html')
-
-# @user_passes_test(check_member)
-# def member_view(request):
-#     return render(request, 'member_view.html')
 
 def user_login(request):
     if request.method == 'POST':
