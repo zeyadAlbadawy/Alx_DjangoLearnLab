@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.dispatch import receiver
+
 # Create your models here.
 class Author(models.Model):
     name = models.CharField(max_length=200)
@@ -31,7 +33,8 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return self.role
-    
+
+@receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
         UserProfile.objects.create(user=instance)
