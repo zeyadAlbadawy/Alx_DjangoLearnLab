@@ -5,6 +5,8 @@ from django.views.generic.detail import DetailView
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.decorators import login_required, user_passes_test
+
 
 
 # ROLES
@@ -19,18 +21,18 @@ def is_member(user):
     return hasattr(user, 'userprofile') and user.userprofile.role == 'Member'
 
 
-# @login_required
-# @user_passes_test(is_admin)
+@login_required
+@user_passes_test(is_admin)
 def admin_view(request):
     return render(request, 'admin_view.html')
 
-# @login_required
-# @user_passes_test(is_librarian)
+@login_required
+@user_passes_test(is_librarian)
 def librarian_view(request):
     return render(request, 'librarian_view.html')
 
-# @login_required
-# @user_passes_test(is_member)
+@login_required
+@user_passes_test(is_member)
 def member_view(request):
     return render(request, 'member_view.html')
 
