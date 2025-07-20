@@ -47,3 +47,15 @@ def save_user_profile(sender, instance, **kwargs):
         instance.userprofile.save()
     else:
         UserProfile.objects.create(user=instance)
+
+
+## Task 04class Book(models.Model):
+    title = models.CharField(max_length=200)
+    author = models.ForeignKey(Author, on_delete=models.CASCADE)
+
+    class Meta:
+        permissions = [
+            ('can_add_book', 'Can add a book'),
+            ('can_change_book', 'Can change a book'),
+            ('can_delete_book', 'Can delete a book'),
+        ]
