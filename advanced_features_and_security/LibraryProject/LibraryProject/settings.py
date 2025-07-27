@@ -23,23 +23,31 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-qe(6+-f0b2te(4@wh=el8ecjm3^c5nhw-k_0_2fx3%&(ij5nmq'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
 ALLOWED_HOSTS = []
 
-# Secure browser-side protections
-SECURE_BROWSER_XSS_FILTER = True
-SECURE_CONTENT_TYPE_NOSNIFF = True
-X_FRAME_OPTIONS = 'DENY'  # Prevent clickjacking
+# SECURITY: Force HTTPS redirect
+SECURE_SSL_REDIRECT = True  # Redirect all HTTP requests to HTTPS
 
-# Use HTTPS cookies (only works with HTTPS)
-CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SECURE = True
-
-# Recommended: Enable HSTS in production
-SECURE_HSTS_SECONDS = 31536000
+# SECURITY: HTTP Strict Transport Security (HSTS)
+SECURE_HSTS_SECONDS = 31536000  # 1 year in seconds
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
+
+# SECURITY: Secure cookies
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+
+# SECURITY: Additional headers
+X_FRAME_OPTIONS = 'DENY'  # Prevent clickjacking
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_BROWSER_XSS_FILTER = True
+
+# OPTIONAL: If deploying to Heroku or behind a proxy (e.g., Nginx)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# WARNING: For production only!
+DEBUG = False  # NEVER keep True in production
 
 # Application definition
 
