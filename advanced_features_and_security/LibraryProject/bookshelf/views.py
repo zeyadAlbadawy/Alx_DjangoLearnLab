@@ -1,8 +1,8 @@
 from django.shortcuts import render
 from django.http import HttpResponse
-
 from django.contrib.auth.decorators import permission_required
 from django.shortcuts import render, get_object_or_404
+from .forms import ExampleForm
 from .models import Book
 # Create your views here.
 def index(request): 
