@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
-from .views import BookListCreateView, BookDetailView, BookUpdateView, BookDeleteView
+from .views import BookListView, BookCreateView, BookUpdateView, BookDeleteView
 
 urlpatterns = [
     path('books/', BookListView.as_view(), name='book-list'),

@@ -9,7 +9,7 @@ class BookListView(generics.ListCreateAPIView):
     serializer_class = BookSerializer
 
 # Retrieve
-class BookCreateView(generics.RetrieveAPIView):
+class BookDetailView(generics.RetrieveAPIView):
     queryset = Book.objects.all()
     serializer_class = BookSerializer
 
