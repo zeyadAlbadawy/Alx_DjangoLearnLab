@@ -1,83 +1,195 @@
+"""
+Unit Tests for Advanced API Project - Book API Endpoints
+"""
+
+from django.contrib.auth.models import User
 from django.urls import reverse
 from rest_framework.test import APITestCase
 from rest_framework import status
-from api.models import Book
-from api.serializers import BookSerializer
+from rest_framework.authtoken.models import Token
+from .models import Book, Author
 
 
 class BookAPITestCase(APITestCase):
+    """Common setup for all Book API tests"""
+
     def setUp(self):
-        # Create sample books
+        # Create users
+        self.admin_user = User.objects.create_user(
+            username='admin',
+            email='admin@test.com',
+            password='testpass123',
+            is_staff=True,
+            is_superuser=True
+        )
+        self.regular_user = User.objects.create_user(
+            username='testuser',
+            email='user@test.com',
+            password='testpass123'
+        )
+
+        # Explicitly test self.client.login requirement here
+        logged_in = self.client.login(username='testuser', password='testpass123')
+        self.assertTrue(logged_in, "Login failed in setUp()")
+
+        # Auth tokens
+        self.admin_token = Token.objects.create(user=self.admin_user)
+        self.user_token = Token.objects.create(user=self.regular_user)
+
+        # Authors
+        self.author1 = Author.objects.create(name="George Orwell")
+        self.author2 = Author.objects.create(name="Jane Austen")
+        self.author3 = Author.objects.create(name="J.K. Rowling")
+
+        # Books
         self.book1 = Book.objects.create(
-            title="Django for Beginners",
-            author="William S. Vincent",
-            published_date="2023-08-01"
+            title="1984", publication_year=1949, author=self.author1
         )
         self.book2 = Book.objects.create(
-            title="Two Scoops of Django",
-            author="Daniel Roy Greenfeld",
-            published_date="2022-05-15"
+            title="Pride and Prejudice", publication_year=1813, author=self.author2
         )
         self.book3 = Book.objects.create(
-            title="Python Crash Course",
-            author="Eric Matthes",
-            published_date="2021-01-10"
+            title="Animal Farm", publication_year=1945, author=self.author1
         )
 
-        self.list_url = reverse('book-list')  # Name from your DRF router
+    def authenticate_as_admin(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.admin_token.key}')
 
-    def test_list_books(self):
-        """Test retrieving the list of books"""
-        response = self.client.get(self.list_url)
-        books = Book.objects.all()
-        serializer = BookSerializer(books, many=True)
+    def authenticate_as_user(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.user_token.key}')
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, serializer.data)  # ✅ compare with serializer
-        self.assertEqual(len(response.data), books.count())  # ✅ check length
+    def unauthenticate(self):
+        self.client.credentials()
 
-    def test_create_book(self):
-        """Test creating a new book"""
-        data = {
-            "title": "New Test Book",
-            "author": "Jane Doe",
-            "published_date": "2024-01-01"
-        }
-        response = self.client.post(self.list_url, data, format='json')
 
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertIn("title", response.data)  # ✅ key check
-        self.assertEqual(response.data["title"], data["title"])  # ✅ value check
+class BookListViewTests(BookAPITestCase):
+    """GET /books/ tests"""
 
-    def test_filter_books_by_author(self):
-        """Test filtering books by author"""
-        url = f"{self.list_url}?author=William S. Vincent"
-        response = self.client.get(url)
+    def test_get_all_books_unauthenticated(self):
+        url = reverse('book-list')
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn('results', res.data)
+        self.assertEqual(len(res.data['results']), 3)
 
-        books = Book.objects.filter(author="William S. Vincent")
-        serializer = BookSerializer(books, many=True)
+    def test_filter_by_title(self):
+        url = reverse('book-list')
+        res = self.client.get(url, {'title': '1984'})
+        self.assertEqual(len(res.data['results']), 1)
+        self.assertEqual(res.data['results'][0]['title'], '1984')
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, serializer.data)  # ✅ filtered match
+    def test_filter_by_author(self):
+        url = reverse('book-list')
+        res = self.client.get(url, {'author': self.author1.id})
+        self.assertEqual(len(res.data['results']), 2)
 
-    def test_search_books_by_title(self):
-        """Test searching books by title"""
-        url = f"{self.list_url}?search=Python"
-        response = self.client.get(url)
+    def test_search_by_title(self):
+        url = reverse('book-list')
+        res = self.client.get(url, {'search': 'Animal'})
+        self.assertEqual(len(res.data['results']), 1)
+        self.assertEqual(res.data['results'][0]['title'], 'Animal Farm')
 
-        books = Book.objects.filter(title__icontains="Python")
-        serializer = BookSerializer(books, many=True)
+    def test_order_by_year_desc(self):
+        url = reverse('book-list')
+        res = self.client.get(url, {'ordering': '-publication_year'})
+        years = [b['publication_year'] for b in res.data['results']]
+        self.assertEqual(years, [1949, 1945, 1813])
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, serializer.data)  # ✅ search match
 
-    def test_order_books_by_published_date_desc(self):
-        """Test ordering books by published date descending"""
-        url = f"{self.list_url}?ordering=-published_date"
-        response = self.client.get(url)
+class BookDetailViewTests(BookAPITestCase):
+    """GET /books/<id>/ tests"""
 
-        books = Book.objects.all().order_by('-published_date')
-        serializer = BookSerializer(books, many=True)
+    def test_get_existing_book(self):
+        url = reverse('book-detail', kwargs={'id': self.book1.id})
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn('title', res.data)
+        self.assertEqual(res.data['title'], '1984')
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, serializer.data)  # ✅ ordered match
+    def test_get_nonexistent_book(self):
+        url = reverse('book-detail', kwargs={'id': 999})
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+
+
+class BookCreateViewTests(BookAPITestCase):
+    """POST /books/create/ tests"""
+
+    def test_create_book_authenticated_user(self):
+        self.authenticate_as_user()
+        url = reverse('book-create')
+        data = {'title': 'The Great Gatsby', 'publication_year': 1925, 'author': self.author2.id}
+        res = self.client.post(url, data, format='json')
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertIn('title', res.data)
+
+    def test_create_book_unauthenticated(self):
+        self.unauthenticate()
+        url = reverse('book-create')
+        data = {'title': 'Unauthorized', 'publication_year': 2023, 'author': self.author1.id}
+        res = self.client.post(url, data, format='json')
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class BookUpdateViewTests(BookAPITestCase):
+    """PATCH /books/<id>/update/ tests"""
+
+    def test_update_book_authenticated_user(self):
+        self.authenticate_as_user()
+        url = reverse('book-update', kwargs={'id': self.book1.id})
+        res = self.client.patch(url, {'title': '1984 - Updated'}, format='json')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data['title'], '1984 - Updated')
+
+    def test_update_nonexistent_book(self):
+        self.authenticate_as_user()
+        url = reverse('book-update', kwargs={'id': 999})
+        res = self.client.patch(url, {'title': 'Does Not Exist'}, format='json')
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+
+
+class BookDeleteViewTests(BookAPITestCase):
+    """DELETE /books/<id>/delete/ tests"""
+
+    def test_delete_book_admin_user(self):
+        self.authenticate_as_admin()
+        url = reverse('book-delete', kwargs={'id': self.book1.id})
+        res = self.client.delete(url)
+        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_delete_book_regular_user_forbidden(self):
+        self.authenticate_as_user()
+        url = reverse('book-delete', kwargs={'id': self.book1.id})
+        res = self.client.delete(url)
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class BookAPIIntegrationTests(BookAPITestCase):
+    """Full CRUD workflow"""
+
+    def test_complete_lifecycle(self):
+        # Create
+        self.authenticate_as_user()
+        create_url = reverse('book-create')
+        data = {'title': 'Lifecycle Book', 'publication_year': 2023, 'author': self.author1.id}
+        res = self.client.post(create_url, data, format='json')
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertIn('id', res.data)
+        book_id = res.data['id']
+
+        # Read
+        detail_url = reverse('book-detail', kwargs={'id': book_id})
+        res = self.client.get(detail_url)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn('title', res.data)
+
+        # Update
+        update_url = reverse('book-update', kwargs={'id': book_id})
+        res = self.client.patch(update_url, {'title': 'Updated'}, format='json')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+        # Delete as admin
+        self.authenticate_as_admin()
+        delete_url = reverse('book-delete', kwargs={'id': book_id})
+        res = self.client.delete(delete_url)
+        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
