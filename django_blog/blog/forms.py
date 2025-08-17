@@ -8,7 +8,7 @@ class PostForm(forms.ModelForm):
     tags = forms.ModelMultipleChoiceField(
         queryset=Tag.objects.all(),
         widget=forms.CheckboxSelectMultiple,  # or forms.SelectMultiple
-        required=False
+        required=False,
         widgets = {
             "tags": TagWidget(),  
         }
