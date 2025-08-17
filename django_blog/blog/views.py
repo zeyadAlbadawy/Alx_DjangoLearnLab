@@ -6,6 +6,10 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from .models import Post, Comment
+from django.shortcuts import get_object_or_404
+from django.urls import reverse_lazy
+from .models import Post, Comment
+from .forms import CommentForm
 
 
 from .forms import RegisterForm, ProfileForm
@@ -88,18 +92,18 @@ class PostDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         return self.request.user == post.author
 
 
-class CommentCreateView(LoginRequiredMixin, CreateView):
+class CommentCreateView(CreateView):
     model = Comment
     form_class = CommentForm
 
     def form_valid(self, form):
         post = get_object_or_404(Post, pk=self.kwargs['pk'])
-        form.instance.author = self.request.user
         form.instance.post = post
+        form.instance.author = self.request.user
         return super().form_valid(form)
 
     def get_success_url(self):
-        return self.object.post.get_absolute_url()
+        return reverse_lazy("post-detail", kwargs={"pk": self.kwargs['pk']})
 
 # Update a comment (only author allowed)
 class CommentUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
