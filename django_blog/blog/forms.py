@@ -2,12 +2,17 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from .models import Profile, Post, Comment, Tag
+from taggit.forms import TagWidget   # ✅ required for tags
 
 class PostForm(forms.ModelForm):
     tags = forms.ModelMultipleChoiceField(
         queryset=Tag.objects.all(),
         widget=forms.CheckboxSelectMultiple,  # or forms.SelectMultiple
         required=False
+        widgets = {
+            "tags": TagWidget(),  
+        }
+
     )
 
     class Meta:
