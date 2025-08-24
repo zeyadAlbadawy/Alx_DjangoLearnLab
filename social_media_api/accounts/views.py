@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
 from django.contrib.auth import get_user_model
-from .serializers import RegisterSerializer, UserSerializer
+from .serializers import RegisterSerializer, UserSerializer, MiniUserSerializer
 from rest_framework import permissions, generics, status
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
