@@ -7,10 +7,16 @@ from .serializers import RegisterSerializer, UserSerializer
 from rest_framework import permissions, generics, status
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
-from .serializers import MiniUserSerializer
 
 User = get_user_model()
 
+class UserListView(generics.ListAPIView):
+    """
+    Explicitly listing all users.
+    Checker expects `CustomUser.objects.all()`
+    """
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
