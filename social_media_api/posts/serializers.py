@@ -11,7 +11,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 
-class PostSerializer(serializers.modelSerializer):
+class PostSerializer(serializers.ModelSerializer):
     author_username = serializers.ReadOnlyField(source='author.username')
     comments = CommentSerializer(many=True, read_only=True)
 

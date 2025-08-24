@@ -122,10 +122,18 @@ STATIC_URL = 'static/'
 AUTH_USER_MODEL = 'accounts.CustomUser'
 
 
+# social_media_api/settings.py
 REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 10
+    'PAGE_SIZE': 10,
 }
+
 
 
 # Default primary key field type
