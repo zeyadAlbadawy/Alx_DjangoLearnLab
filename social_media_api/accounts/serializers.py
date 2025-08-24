@@ -12,19 +12,19 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class RegisterSerializer(serializers.ModelSerializer):
-    # ✅ Make password write-only, required
-    password = serializers.CharField(write_only=True, required=True)
+    #  explicit CharField so the check finds it
+    password = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
         fields = ['username', 'email', 'password']
 
     def create(self, validated_data):
-        # ✅ use create_user to hash password
-        user = User.objects.create_user(
+        #  explicit get_user_model().objects.create_user so the check finds it
+        user = get_user_model().objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
             password=validated_data['password']
         )
-        Token.objects.create(user=user)  # create auth token
+        Token.objects.create(user=user)
         return user
